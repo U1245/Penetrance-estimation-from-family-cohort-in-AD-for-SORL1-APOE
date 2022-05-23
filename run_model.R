@@ -1,6 +1,6 @@
 
 
-run.SORL1_APOE_model <- function(dat, timeName, statusName, cuts, time_censoring = NA, maxIter = 30, cv.threshold = 1e-3) {
+run.SORL1_APOE_model <- function(dat, timeName, statusName, cuts, time_censoring = NA, maxIter = 30, cv.threshold = 1e-3, uAPOE) {
   
   ### Initialisations
   
@@ -34,29 +34,29 @@ run.SORL1_APOE_model <- function(dat, timeName, statusName, cuts, time_censoring
   # Compute CumulL_nc (cumulative hazard for non carriers) at cut times (according to APOE genotype)
   CumulL_nc.i.cuts <- list()
   for (j in 1:length(cuts)) {
-    CumulL_nc.i.0 <- mapply(CumulLambda.APOE, rep(0, n), cuts[j], u = 0); CumulL_nc.i.1 <- mapply(CumulLambda.APOE, rep(1, n), cuts[j], u = 0); CumulL_nc.i.2 <- mapply(CumulLambda.APOE, rep(2, n), cuts[j], u = 0)
+    CumulL_nc.i.0 <- mapply(CumulLambda.APOE, rep(0, n), cuts[j], u = uAPOE); CumulL_nc.i.1 <- mapply(CumulLambda.APOE, rep(1, n), cuts[j], u = uAPOE); CumulL_nc.i.2 <- mapply(CumulLambda.APOE, rep(2, n), cuts[j], u = uAPOE)
     CumulL_nc.i.cuts[[j]] <- matrix(rep(c(CumulL_nc.i.0, CumulL_nc.i.0, CumulL_nc.i.1, CumulL_nc.i.0, CumulL_nc.i.0, CumulL_nc.i.1, CumulL_nc.i.1, CumulL_nc.i.1, CumulL_nc.i.2), 4), ncol = 36)
   }
   # Compute l_nc (hazard for non carriers) at cut times (according to APOE genotype)
   l_nc.i.cuts <- list()
   for (j in 1:length(cuts)) {
-    l_nc.i.0 <- mapply(lambda.APOE, rep(0, n), cuts[j], u = 0); l_nc.i.1 <- mapply(lambda.APOE, rep(1, n), cuts[j], u = 0); l_nc.i.2 <- mapply(lambda.APOE, rep(2, n), cuts[j], u = 0)
+    l_nc.i.0 <- mapply(lambda.APOE, rep(0, n), cuts[j], u = uAPOE); l_nc.i.1 <- mapply(lambda.APOE, rep(1, n), cuts[j], u = uAPOE); l_nc.i.2 <- mapply(lambda.APOE, rep(2, n), cuts[j], u = uAPOE)
     l_nc.i.cuts[[j]] <- matrix(rep(c(l_nc.i.0, l_nc.i.0, l_nc.i.1, l_nc.i.0, l_nc.i.0, l_nc.i.1, l_nc.i.1, l_nc.i.1, l_nc.i.2), 4), ncol = 36)
   }
   
   # Compute CumulL_nc (cumulative hazard for non carriers) for each APOE genotype (N x 36 matrix) at observed time
-  CumulL_nc.i.0 <- mapply(CumulLambda.APOE, rep(0, n), dat$time, u = 0); CumulL_nc.i.1 <- mapply(CumulLambda.APOE, rep(1, n), dat$time, u = 0); CumulL_nc.i.2 <- mapply(CumulLambda.APOE, rep(2, n), dat$time, u = 0)
+  CumulL_nc.i.0 <- mapply(CumulLambda.APOE, rep(0, n), dat$time, u = uAPOE); CumulL_nc.i.1 <- mapply(CumulLambda.APOE, rep(1, n), dat$time, u = uAPOE); CumulL_nc.i.2 <- mapply(CumulLambda.APOE, rep(2, n), dat$time, u = uAPOE)
   CumulL_nc.i <- matrix(rep(c(CumulL_nc.i.0, CumulL_nc.i.0, CumulL_nc.i.1, CumulL_nc.i.0, CumulL_nc.i.0, CumulL_nc.i.1, CumulL_nc.i.1, CumulL_nc.i.1, CumulL_nc.i.2), 4), ncol = 36)
   
   # Compute l_nc (hazard for non carriers) for each APOE genotype (N x 36 matrix) at observed time
-  l_nc.i.0 <- mapply(lambda.APOE, rep(0, n), dat$time, u = 0); l_nc.i.1 <- mapply(lambda.APOE, rep(1, n), dat$time, u = 0); l_nc.i.2 <- mapply(lambda.APOE, rep(2, n), dat$time, u = 0)
+  l_nc.i.0 <- mapply(lambda.APOE, rep(0, n), dat$time, u = uAPOE); l_nc.i.1 <- mapply(lambda.APOE, rep(1, n), dat$time, u = uAPOE); l_nc.i.2 <- mapply(lambda.APOE, rep(2, n), dat$time, u = uAPOE)
   l_nc.i <- matrix(rep(c(l_nc.i.0, l_nc.i.0, l_nc.i.1, l_nc.i.0, l_nc.i.0, l_nc.i.1, l_nc.i.1, l_nc.i.1, l_nc.i.2), 4), ncol = 36)
   
   # n x 36 matrix of status (delta_i)
   delta.i <- matrix(rep(dat$status, 36), ncol = 36)
   
   ### EM algorithm
-  
+  set.seed(123)
   # weights initialisation 
   w.ig <- matrix(runif(n*36, 0, 1), ncol = 36)
   x <- outer(c("w.22", "w.32", "w.42", "w.23", "w.33", "w.43", "w.24", "w.34", "w.44"), c(".00", ".01", ".10", ".11"), FUN = "paste0")
